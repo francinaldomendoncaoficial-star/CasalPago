@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>💑 CasalPago</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+  /* ── TOKENS ─────────────────────────────────────────────── */
+  :root {
+    --bg: #0f0e17; --surface: #1a1928; --surface2: #252438;
+    --border: #2e2c4a; --text: #fffffe; --text2: #a7a5c0;
+    --accent-h: #e8c468; --accent-w: #f06292; --accent: #7c6af7;
+    --success: #4caf82; --danger: #e05c5c; --r: 18px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  .light {
+    --bg: #f5f0ff; --surface: #ffffff; --surface2: #ece8f8;
+    --border: #d5cff0; --text: #1a1532; --text2: #6b648a;
+    --shadow: 0 4px 24px rgba(100,80,200,0.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; transition: background .3s, color .3s; }
+
+  /* ── TELA DE LOGIN ───────────────────────────────────────── */
+  #loginScreen {
+    position: fixed; inset: 0; z-index: 999;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px 24px;
+    gap: 0;
+  }
+  #loginScreen .login-logo { font-size: 56px; margin-bottom: 8px; }
+  #loginScreen .login-title {
+    font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), #a084ee);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+  #loginScreen .login-sub { font-size: 14px; color: var(--text2); margin-bottom: 36px; }
+  #loginScreen .login-card {
+    width: 100%; max-width: 380px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; padding: 28px 24px;
+    box-shadow: var(--shadow);
+  }
+  #loginScreen .form-group { margin-bottom: 16px; }
+  #loginScreen .form-label {
+    font-size: 11px; font-weight: 600; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .5px;
+    display: block; margin-bottom: 6px;
+  }
+  #loginScreen .form-input {
+    width: 100%; padding: 13px 15px;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 12px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 15px;
+    transition: border-color .2s;
+  }
+  #loginScreen .form-input:focus { outline: none; border-color: var(--accent); }
+  #loginScreen .btn-login {
+    width: 100%; padding: 15px;
+    background: linear-gradient(135deg, var(--accent), #a084ee);
+    border: none; border-radius: 14px;
+    color: #fff; font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    margin-top: 4px; transition: transform .15s;
+  }
+  #loginScreen .btn-login:active { transform: scale(.98); }
+  #loginScreen .btn-login:disabled { opacity: .6; cursor: not-allowed; }
+  #loginScreen .login-error {
+    margin-top: 14px; padding: 11px 14px;
+    background: rgba(224,92,92,.15); border: 1px solid var(--danger);
+    border-radius: 10px; color: var(--danger); font-size: 13px;
+    text-align: center; display: none;
+  }
+  #loginScreen .login-hint {
+    margin-top: 18px; font-size: 12px; color: var(--text2); text-align: center;
+  }
+
+  /* ── APP (oculto até login) ──────────────────────────────── */
+  #appShell { display: none; flex-direction: column; height: 100%; }
+
+  /* ── HEADER ─────────────────────────────────────────────── */
+  .header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 20px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .header h1 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -.5px; }
+  .header-actions { display: flex; gap: 10px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface2); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--text); transition: transform .15s;
+  }
+  .icon-btn:active { transform: scale(.92); }
+
+  /* ── BOTTOM NAV ──────────────────────────────────────────── */
+  .bottom-nav {
+    background: var(--surface); border-top: 1px solid var(--border);
+    display: flex; flex-shrink: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-item {
+    flex: 1; padding: 10px 4px 8px;
+    border: none; background: none; cursor: pointer;
+    color: var(--text2); font-size: 10px; font-weight: 500;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    transition: color .2s;
+  }
+  .nav-item .nav-icon { font-size: 22px; }
+  .nav-item.active { color: var(--accent); }
+
+  /* ── PAGES ───────────────────────────────────────────────── */
+  .pages { flex: 1; overflow: hidden; position: relative; }
+  .page { display: none; height: 100%; overflow-y: auto; padding: 16px; animation: fadeIn .2s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── DASHBOARD ───────────────────────────────────────────── */
+  .balance-hero {
+    background: linear-gradient(135deg, var(--accent) 0%, #a084ee 100%);
+    border-radius: 20px; padding: 22px; margin-bottom: 16px;
+    position: relative; overflow: hidden;
+  }
+  .balance-hero::before { content:'💑'; position:absolute; right:16px; top:12px; font-size:48px; opacity:.2; }
+  .balance-label { font-size:12px; font-weight:500; opacity:.85; text-transform:uppercase; letter-spacing:1px; color:#fff; }
+  .balance-amount { font-family:'Syne',sans-serif; font-size:36px; font-weight:800; color:#fff; margin:4px 0 6px; }
+  .balance-sub { font-size:13px; color:rgba(255,255,255,.8); }
+  .cards-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .mini-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:14px; }
+  .mini-card-label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; }
+  .mini-card-value { font-family:'Syne',sans-serif; font-size:20px; font-weight:700; margin-top:4px; }
+  .mini-card-value.husband { color:var(--accent-h); }
+  .mini-card-value.wife    { color:var(--accent-w); }
+  .section-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; margin-bottom:10px; }
+  .recent-list { display:flex; flex-direction:column; gap:10px; }
+  .tx-item {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--r); padding:13px 15px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .tx-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .tx-avatar.husband { background:rgba(232,196,104,.18); }
+  .tx-avatar.wife    { background:rgba(240,98,146,.18); }
+  .tx-info { flex:1; min-width:0; }
+  .tx-desc { font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tx-meta { font-size:11px; color:var(--text2); margin-top:2px; }
+  .tx-amount { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; flex-shrink:0; }
+  .tx-amount.husband { color:var(--accent-h); }
+  .tx-amount.wife    { color:var(--accent-w); }
+  .empty-state { text-align:center; padding:40px 20px; color:var(--text2); }
+  .empty-state .emoji { font-size:48px; display:block; margin-bottom:12px; }
+
+  /* ── HISTORY ─────────────────────────────────────────────── */
+  .filter-bar { display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; }
+  .filter-bar::-webkit-scrollbar { display:none; }
+  .filter-chip {
+    padding:6px 14px; border-radius:20px;
+    border:1.5px solid var(--border); background:var(--surface);
+    cursor:pointer; font-size:12px; font-weight:500; color:var(--text2);
+    white-space:nowrap; transition:all .2s;
+  }
+  .filter-chip.active { border-color:var(--accent); color:var(--accent); background:rgba(124,106,247,.1); }
+  .tx-item-full { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:14px 15px; margin-bottom:10px; }
+  .tx-row1 { display:flex; align-items:center; gap:10px; }
+  .tx-category-badge { font-size:11px; padding:2px 8px; border-radius:20px; background:var(--surface2); color:var(--text2); display:inline-block; margin-top:4px; }
+  .tx-actions { display:flex; gap:8px; margin-top:10px; }
+  .tx-action-btn { flex:1; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text2); font-size:12px; cursor:pointer; }
+  .tx-action-btn.danger { color:var(--danger); border-color:var(--danger); }
+
+  /* ── REPORTS ─────────────────────────────────────────────── */
+  .date-range-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .report-summary-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px; margin-bottom:12px; }
+  .report-summary-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; margin-bottom:10px; }
+  .report-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .report-row:last-child { border-bottom:none; font-weight:600; }
+
+  /* ── SETTINGS ────────────────────────────────────────────── */
+  .settings-section { margin-bottom:24px; }
+  .settings-label { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px; }
+  .settings-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+  .settings-row { padding:15px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+  .settings-row:last-child { border-bottom:none; }
+  .settings-row-label { font-size:14px; font-weight:500; }
+  .settings-row-sub { font-size:12px; color:var(--text2); margin-top:2px; }
+  .toggle { width:46px; height:26px; border-radius:13px; background:var(--border); position:relative; cursor:pointer; transition:background .2s; flex-shrink:0; }
+  .toggle.on { background:var(--accent); }
+  .toggle::after { content:''; width:20px; height:20px; border-radius:50%; background:#fff; position:absolute; top:3px; left:3px; transition:left .2s; }
+  .toggle.on::after { left:23px; }
+
+  /* ── FORM ────────────────────────────────────────────────── */
+  .form-group { margin-bottom:16px; }
+  .form-label { font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; display:block; }
+  .form-input, .form-select, .form-textarea {
+    width:100%; padding:13px 15px;
+    background:var(--surface2); border:1.5px solid var(--border);
+    border-radius:12px; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:15px;
+    transition:border-color .2s; -webkit-appearance:none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { outline:none; border-color:var(--accent); }
+  .form-textarea { min-height:80px; resize:vertical; }
+  .direction-btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .dir-btn {
+    padding:14px 10px; border-radius:12px; border:2px solid var(--border);
+    background:var(--surface2); cursor:pointer; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
+    transition:all .2s; text-align:center;
+  }
+  .dir-btn.selected-h { border-color:var(--accent-h); background:rgba(232,196,104,.15); color:var(--accent-h); }
+  .dir-btn.selected-w { border-color:var(--accent-w); background:rgba(240,98,146,.15); color:var(--accent-w); }
+  .btn-primary {
+    width:100%; padding:15px;
+    background:linear-gradient(135deg, var(--accent), #a084ee);
+    border:none; border-radius:14px; color:#fff;
+    font-family:'Syne',sans-serif; font-size:15px; font-weight:700;
+    cursor:pointer; margin-top:8px; transition:transform .15s;
+  }
+  .btn-primary:active { transform:scale(.98); }
+  .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+  .btn-secondary { width:100%; padding:13px; background:var(--surface2); border:1.5px solid var(--border); border-radius:14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; cursor:pointer; margin-top:8px; }
+  .amount-wrap { background:var(--surface2); border:2px solid var(--border); border-radius:16px; padding:16px; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:16px; }
+  .amount-big { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; text-align:center; border:none; background:transparent; color:var(--text); width:100%; outline:none; }
+  .amount-big::placeholder { color:var(--border); }
+  .currency-sym { font-family:'Syne',sans-serif; font-size:24px; font-weight:700; color:var(--text2); }
+  .cat-scroll { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; }
+  .cat-scroll::-webkit-scrollbar { display:none; }
+  .cat-pill { padding:8px 14px; border-radius:20px; border:1.5px solid var(--border); background:var(--surface2); cursor:pointer; font-size:12px; white-space:nowrap; transition:all .2s; color:var(--text); }
+  .cat-pill.selected { border-color:var(--accent); background:rgba(124,106,247,.15); color:var(--accent); }
+
+  /* ── FAB ─────────────────────────────────────────────────── */
+  .fab {
+    position:fixed; bottom:80px; right:20px;
+    width:56px; height:56px; border-radius:50%;
+    background:linear-gradient(135deg, var(--accent), #a084ee);
+    border:none; cursor:pointer; font-size:26px; color:#fff;
+    box-shadow:0 4px 20px rgba(124,106,247,.5);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50; transition:transform .15s;
+  }
+  .fab:active { transform:scale(.93); }
+
+  /* ── MODAL ───────────────────────────────────────────────── */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; align-items:flex-end; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border-radius:24px 24px 0 0; width:100%; max-height:92vh; overflow-y:auto; padding:20px 20px 40px; animation:slideUp .3s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  .modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 20px; }
+  .modal-title { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; margin-bottom:20px; }
+
+  /* ── SNACKBAR ────────────────────────────────────────────── */
+  .snackbar {
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--accent); color:#fff; padding:12px 20px;
+    border-radius:12px; font-size:14px; font-weight:500;
+    opacity:0; transition:all .3s; z-index:300; white-space:nowrap;
+  }
+  .snackbar.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ── LOADING ─────────────────────────────────────────────── */
+  .loading-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5);
+    display:flex; align-items:center; justify-content:center;
+    z-index:500; display:none;
+  }
+  .loading-overlay.show { display:flex; }
+  .spinner { width:40px; height:40px; border:4px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ══ TELA DE LOGIN ══════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-logo">💑</div>
+  <div class="login-title">CasalPago</div>
+  <div class="login-sub">Finanças do casal, simples assim</div>
+
+  <div class="login-card">
+    <div class="form-group">
+      <label class="form-label">Login</label>
+      <input type="text" id="loginInput" class="form-input" placeholder="Seu login" autocomplete="username" autocapitalize="none">
+    </div>
+    <div class="form-group" style="margin-bottom:4px;">
+      <label class="form-label">Senha</label>
+      <input type="password" id="senhaInput" class="form-input" placeholder="Sua senha" autocomplete="current-password">
+    </div>
+    <div id="loginError" class="login-error">Login ou senha incorretos.</div>
+    <button class="btn-login" id="btnLogin" onclick="fazerLogin()">Entrar →</button>
+    <div class="login-hint">💡 Demo: login <strong>demo</strong> · senha <strong>1234</strong></div>
+  </div>
+</div>
+
+<!-- ══ APP SHELL ══════════════════════════════════════════════ -->
+<div id="appShell">
+
+  <div class="header">
+    <h1>💑 CasalPago</h1>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="toggleTheme()" title="Tema">🌙</button>
+      <button class="icon-btn" onclick="abrirModal('addModal')" title="Novo lançamento">＋</button>
+      <button class="icon-btn" onclick="sair()" title="Sair">🚪</button>
+    </div>
+  </div>
+
+  <div class="pages">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="pageDashboard">
+      <div class="balance-hero">
+        <div class="balance-label">Saldo do casal</div>
+        <div class="balance-amount" id="balanceSaldo">R$ 0,00</div>
+        <div class="balance-sub" id="balanceSub">Nenhum lançamento ainda</div>
+      </div>
+      <div class="cards-row">
+        <div class="mini-card">
+          <div class="mini-card-label" id="lblMarido">Marido</div>
+          <div class="mini-card-value husband" id="totalMarido">R$ 0,00</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-label" id="lblEsposa">Esposa</div>
+          <div class="mini-card-value wife" id="totalEsposa">R$ 0,00</div>
+        </div>
+      </div>
+      <div class="section-title">Últimos lançamentos</div>
+      <div class="recent-list" id="recentList">
+        <div class="empty-state"><span class="emoji">🎉</span>Nenhum lançamento ainda.<br>Toque em + para adicionar!</div>
+      </div>
+    </div>
+
+    <!-- ── HISTÓRICO ── -->
+    <div class="page" id="pageHistory">
+      <div class="filter-bar">
+        <button class="filter-chip active" onclick="setFilter('all',this)">Todos</button>
+        <button class="filter-chip" onclick="setFilter('marido',this)" id="chipMarido">Marido</button>
+        <button class="filter-chip" onclick="setFilter('esposa',this)" id="chipEsposa">Esposa</button>
+      </div>
+      <div id="historyList"></div>
+    </div>
+
+    <!-- ── RELATÓRIO ── -->
+    <div class="page" id="pageReport">
+      <div class="report-summary-card">
+        <div class="report-summary-title">📅 Período</div>
+        <div class="date-range-row">
+          <div>
+            <label class="form-label">De</label>
+            <input type="date" class="form-input" id="reportStart" onchange="renderReport()">
+          </div>
+          <div>
+            <label class="form-label">Até</label>
+            <input type="date" class="form-input" id="reportEnd" onchange="renderReport()">
+          </div>
+        </div>
+      </div>
+      <div class="report-summary-card">
+        <div class="report-summary-title">📊 Resumo</div>
+        <div id="reportContent"><div style="color:var(--text2);font-size:13px;">Selecione um período.</div></div>
+      </div>
+      <div class="report-summary-card">
+        <div class="report-summary-title">🏷️ Por categoria</div>
+        <div id="categoryStats"></div>
+      </div>
+    </div>
+
+    <!-- ── CONFIGURAÇÕES ── -->
+    <div class="page" id="pageSettings">
+      <div class="settings-section">
+        <div class="settings-label">Aparência</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label">Modo Noite</div>
+              <div class="settings-row-sub">Tema escuro</div>
+            </div>
+            <div class="toggle on" id="themeToggle" onclick="toggleTheme()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">Marido</div>
+        <div class="settings-card">
+          <div style="padding:16px;">
+            <input type="text" class="form-input" id="cfgNomeMarido" placeholder="Nome do marido">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">Esposa</div>
+        <div class="settings-card">
+          <div style="padding:16px;">
+            <input type="text" class="form-input" id="cfgNomeEsposa" placeholder="Nome da esposa">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">Categorias personalizadas</div>
+        <div class="settings-card">
+          <div class="settings-row" style="gap:10px;">
+            <input type="text" class="form-input" id="newCatInput" placeholder="Nova categoria..." style="margin:0;border:none;background:transparent;padding:0;flex:1;">
+            <button onclick="addCategory()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;">+</button>
+          </div>
+          <div id="catList" style="padding:10px 16px;"></div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="salvarConfiguracoes()">💾 Salvar configurações</button>
+    </div>
+
+  </div><!-- /pages -->
+
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="goPage('Dashboard')"><span class="nav-icon">🏠</span>Início</button>
+    <button class="nav-item" onclick="goPage('History')"><span class="nav-icon">📋</span>Histórico</button>
+    <button class="nav-item" onclick="goPage('Report')"><span class="nav-icon">📊</span>Relatório</button>
+    <button class="nav-item" onclick="goPage('Settings')"><span class="nav-icon">⚙️</span>Config</button>
+  </div>
+
+  <button class="fab" onclick="abrirModal('addModal')">＋</button>
+
+</div><!-- /appShell -->
+
+<!-- ══ MODAL: NOVO LANÇAMENTO ═════════════════════════════════ -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="addModalTitle">💰 Novo Lançamento</div>
+
+    <input type="hidden" id="txEditId">
+
+    <div class="form-group">
+      <label class="form-label">Valor *</label>
+      <div class="amount-wrap">
+        <span class="currency-sym">R$</span>
+        <input type="number" class="amount-big" id="txAmount" placeholder="0,00" step="0.01" min="0">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Quem pagou? *</label>
+      <div class="direction-btns">
+        <button class="dir-btn" id="dirMarido" onclick="setDir('marido')">
+          <div style="font-size:20px;">👨</div>
+          <div id="dirNomeMarido">Marido</div>
+        </button>
+        <button class="dir-btn" id="dirEsposa" onclick="setDir('esposa')">
+          <div style="font-size:20px;">👩</div>
+          <div id="dirNomeEsposa">Esposa</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Descrição *</label>
+      <input type="text" class="form-input" id="txDesc" placeholder="Ex: Jantar no restaurante 🍽️">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Categoria</label>
+      <div class="cat-scroll" id="catScroll"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Data e Hora</label>
+      <input type="datetime-local" class="form-input" id="txDate">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notas</label>
+      <textarea class="form-textarea" id="txNotes" placeholder="Detalhes opcionais..."></textarea>
+    </div>
+
+    <button class="btn-primary" id="btnSalvarTx" onclick="salvarLancamento()">✅ Salvar</button>
+    <button class="btn-secondary" onclick="fecharModal('addModal')">Cancelar</button>
+  </div>
+</div>
+
+<!-- SNACKBAR / LOADING -->
+<div class="snackbar" id="snackbar"></div>
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════╗
+// ║  CONFIGURAÇÃO — cole aqui a URL do seu Web App GAS      ║
+// ╚══════════════════════════════════════════════════════════╝
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzvKebJRFCkJT8AEamA0wi3ipn-To2_frEo3-ZuNMTo9nsuOxVnywdfoPshgMKexEKIUA/exec';
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  ESTADO GLOBAL                                          ║
+// ╚══════════════════════════════════════════════════════════╝
+let usuario = null;         // { login, nomeMarido, nomeEsposa, categorias, darkMode }
+let transactions = [];      // array local sincronizado com o Sheets
+let historyFilter = 'all';
+let selectedDir = null;
+let selectedCat = null;
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  API HELPER                                             ║
+// ╚══════════════════════════════════════════════════════════╝
+async function api(body) {
+  const resp = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // evita preflight CORS
+    body: JSON.stringify(body)
+  });
+  if (!resp.ok) throw new Error('Erro de rede: ' + resp.status);
+  return resp.json();
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  LOGIN / LOGOUT                                         ║
+// ╚══════════════════════════════════════════════════════════╝
+document.getElementById('senhaInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fazerLogin();
+});
+document.getElementById('loginInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('senhaInput').focus();
+});
+
+async function fazerLogin() {
+  const login = document.getElementById('loginInput').value.trim();
+  const senha = document.getElementById('senhaInput').value.trim();
+  const errEl = document.getElementById('loginError');
+  const btn   = document.getElementById('btnLogin');
+
+  errEl.style.display = 'none';
+  if (!login || !senha) { errEl.textContent = 'Preencha login e senha.'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Entrando…';
+  try {
+    const res = await api({ action: 'login', login, senha });
+    if (!res.ok) {
+      errEl.textContent = res.error || 'Login ou senha incorretos.';
+      errEl.style.display = 'block';
+      return;
+    }
+    usuario = res.usuario;
+    await iniciarApp();
+  } catch(e) {
+    errEl.textContent = '⚠️ Erro de conexão. Verifique a URL do GAS.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Entrar →';
+  }
+}
+
+function sair() {
+  if (!confirm('Deseja sair da conta?')) return;
+  usuario = null; transactions = [];
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginInput').value = '';
+  document.getElementById('senhaInput').value = '';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  INICIALIZAÇÃO DO APP                                   ║
+// ╚══════════════════════════════════════════════════════════╝
+async function iniciarApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+
+  // Aplica tema
+  if (usuario.darkMode) {
+    document.body.classList.remove('light');
+    document.getElementById('themeToggle').classList.add('on');
+  } else {
+    document.body.classList.add('light');
+    document.getElementById('themeToggle').classList.remove('on');
+  }
+
+  // Preenche configurações
+  document.getElementById('cfgNomeMarido').value = usuario.nomeMarido;
+  document.getElementById('cfgNomeEsposa').value = usuario.nomeEsposa;
+  renderCatList();
+  updateDirLabels();
+  updateFilterChips();
+
+  // Carrega lançamentos
+  showLoading(true);
+  try {
+    const res = await api({ action: 'getTransactions', login: usuario.login });
+    if (res.ok) transactions = res.transactions || [];
+  } catch(e) { snack('⚠️ Erro ao carregar dados.'); }
+  showLoading(false);
+
+  renderAll();
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  NAVEGAÇÃO                                              ║
+// ╚══════════════════════════════════════════════════════════╝
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page' + name).classList.add('active');
+  const idx = ['Dashboard','History','Report','Settings'].indexOf(name);
+  document.querySelectorAll('.nav-item')[idx].classList.add('active');
+  if (name === 'Report') preencherDatasRelatorio();
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  RENDER                                                 ║
+// ╚══════════════════════════════════════════════════════════╝
+function renderAll() {
+  renderDashboard();
+  renderHistory();
+  renderReport();
+}
+
+function fmt(v) {
+  return 'R$ ' + parseFloat(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function renderDashboard() {
+  let hTotal = 0, wTotal = 0;
+  transactions.forEach(tx => {
+    if (tx.direcao === 'marido') hTotal += tx.valor;
+    else wTotal += tx.valor;
+  });
+  const diff = hTotal - wTotal;
+
+  document.getElementById('totalMarido').textContent = fmt(hTotal);
+  document.getElementById('totalEsposa').textContent = fmt(wTotal);
+  document.getElementById('lblMarido').textContent   = usuario ? usuario.nomeMarido : 'Marido';
+  document.getElementById('lblEsposa').textContent   = usuario ? usuario.nomeEsposa : 'Esposa';
+
+  document.getElementById('balanceSaldo').textContent = fmt(Math.abs(diff));
+  if (Math.abs(diff) < 0.01) {
+    document.getElementById('balanceSub').textContent = '🎉 Vocês estão quites!';
+  } else if (diff > 0) {
+    document.getElementById('balanceSub').textContent = usuario.nomeEsposa + ' deve ' + fmt(diff) + ' para ' + usuario.nomeMarido;
+  } else {
+    document.getElementById('balanceSub').textContent = usuario.nomeMarido + ' deve ' + fmt(Math.abs(diff)) + ' para ' + usuario.nomeEsposa;
+  }
+
+  const recent = [...transactions].slice(0, 8);
+  const el = document.getElementById('recentList');
+  if (!recent.length) {
+    el.innerHTML = '<div class="empty-state"><span class="emoji">🎉</span>Nenhum lançamento ainda.<br>Toque em + para adicionar!</div>';
+    return;
+  }
+  el.innerHTML = recent.map(tx => txItemHTML(tx)).join('');
+}
+
+function txItemHTML(tx) {
+  const isM = tx.direcao === 'marido';
+  const nome = isM ? usuario.nomeMarido : usuario.nomeEsposa;
+  const cls  = isM ? 'husband' : 'wife';
+  const emo  = isM ? '👨' : '👩';
+  const data = tx.data ? new Date(tx.data).toLocaleDateString('pt-BR') : '';
+  return `<div class="tx-item">
+    <div class="tx-avatar ${cls}">${emo}</div>
+    <div class="tx-info">
+      <div class="tx-desc">${tx.descricao || '(sem descrição)'}</div>
+      <div class="tx-meta">${nome} · ${data}${tx.categoria ? ' · ' + tx.categoria : ''}</div>
+    </div>
+    <div class="tx-amount ${cls}">${fmt(tx.valor)}</div>
+  </div>`;
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  let list = [...transactions];
+  if (historyFilter === 'marido') list = list.filter(t => t.direcao === 'marido');
+  if (historyFilter === 'esposa') list = list.filter(t => t.direcao === 'esposa');
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><span class="emoji">📋</span>Nenhum lançamento.</div>';
+    return;
+  }
+  el.innerHTML = list.map(tx => {
+    const isM = tx.direcao === 'marido';
+    const nome = isM ? usuario.nomeMarido : usuario.nomeEsposa;
+    const cls  = isM ? 'husband' : 'wife';
+    const emo  = isM ? '👨' : '👩';
+    const data = tx.data ? new Date(tx.data).toLocaleDateString('pt-BR') : '';
+    return `<div class="tx-item-full">
+      <div class="tx-row1">
+        <div class="tx-avatar ${cls}" style="font-size:16px;">${emo}</div>
+        <div class="tx-info">
+          <div class="tx-desc">${tx.descricao || '(sem descrição)'}</div>
+          <div class="tx-meta">${nome} · ${data}</div>
+          ${tx.categoria ? `<span class="tx-category-badge">${tx.categoria}</span>` : ''}
+        </div>
+        <div class="tx-amount ${cls}">${fmt(tx.valor)}</div>
+      </div>
+      <div class="tx-actions">
+        <button class="tx-action-btn" onclick="editarLancamento('${tx.id}')">✏️ Editar</button>
+        <button class="tx-action-btn danger" onclick="excluirLancamento('${tx.id}')">🗑️ Excluir</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setFilter(f, btn) {
+  historyFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistory();
+}
+
+// ── Relatório ─────────────────────────────────────────────
+function preencherDatasRelatorio() {
+  const now   = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const f = d => d.toISOString().slice(0, 10);
+  const elS = document.getElementById('reportStart');
+  const elE = document.getElementById('reportEnd');
+  if (!elS.value) elS.value = f(start);
+  if (!elE.value) elE.value = f(end);
+  renderReport();
+}
+
+function renderReport() {
+  const start = document.getElementById('reportStart')?.value;
+  const end   = document.getElementById('reportEnd')?.value;
+  if (!start || !end) return;
+
+  const s = new Date(start);
+  const e = new Date(end); e.setHours(23, 59, 59);
+  const txs = transactions.filter(tx => { const d = new Date(tx.data); return d >= s && d <= e; });
+
+  let hTotal = 0, wTotal = 0;
+  txs.forEach(tx => { if (tx.direcao === 'marido') hTotal += tx.valor; else wTotal += tx.valor; });
+  const diff = hTotal - wTotal;
+  const balText = Math.abs(diff) < 0.01
+    ? '🎉 Quites!'
+    : diff > 0
+      ? usuario.nomeEsposa + ' deve ' + fmt(diff) + ' para ' + usuario.nomeMarido
+      : usuario.nomeMarido + ' deve ' + fmt(Math.abs(diff)) + ' para ' + usuario.nomeEsposa;
+
+  document.getElementById('reportContent').innerHTML = `
+    <div class="report-row"><span>${usuario.nomeMarido} pagou</span><span style="color:var(--accent-h)">${fmt(hTotal)}</span></div>
+    <div class="report-row"><span>${usuario.nomeEsposa} pagou</span><span style="color:var(--accent-w)">${fmt(wTotal)}</span></div>
+    <div class="report-row"><span>Lançamentos</span><span>${txs.length}</span></div>
+    <div class="report-row"><span>Saldo</span><span>${balText}</span></div>
+  `;
+
+  // por categoria
+  const cats = {};
+  txs.forEach(tx => {
+    const c = tx.categoria || '📌 Sem categoria';
+    if (!cats[c]) cats[c] = { total: 0, count: 0 };
+    cats[c].total += tx.valor; cats[c].count++;
+  });
+  const catEl = document.getElementById('categoryStats');
+  if (!Object.keys(cats).length) {
+    catEl.innerHTML = '<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px;">Nenhum dado no período.</div>';
+    return;
+  }
+  catEl.innerHTML = Object.entries(cats).sort((a,b) => b[1].total - a[1].total).map(([cat,d]) => `
+    <div class="report-summary-card" style="padding:12px 16px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:14px;font-weight:500;">${cat}</span>
+        <div style="text-align:right;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent);">${fmt(d.total)}</div>
+          <div style="font-size:11px;color:var(--text2);">${d.count} lançamento(s)</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  LANÇAMENTO: ADD / EDIT / DELETE                        ║
+// ╚══════════════════════════════════════════════════════════╝
+function abrirModal(id) {
+  if (id === 'addModal') {
+    document.getElementById('addModalTitle').textContent = '💰 Novo Lançamento';
+    document.getElementById('txEditId').value = '';
+    document.getElementById('txAmount').value = '';
+    document.getElementById('txDesc').value   = '';
+    document.getElementById('txNotes').value  = '';
+    selectedDir = null; selectedCat = null;
+    setDir(null);
+    document.getElementById('txDate').value = new Date().toISOString().slice(0, 16);
+    renderCatScroll();
+  }
+  document.getElementById(id).classList.add('open');
+}
+
+function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function setDir(d) {
+  selectedDir = d;
+  document.getElementById('dirMarido').className = 'dir-btn' + (d === 'marido' ? ' selected-h' : '');
+  document.getElementById('dirEsposa').className = 'dir-btn' + (d === 'esposa' ? ' selected-w' : '');
+}
+
+function renderCatScroll() {
+  const cats = usuario ? usuario.categorias : [];
+  document.getElementById('catScroll').innerHTML = cats.map(c =>
+    `<button class="cat-pill${c === selectedCat ? ' selected' : ''}" onclick="setCat('${c.replace(/'/g, "\\'")}')">${c}</button>`
+  ).join('');
+}
+
+function setCat(c) { selectedCat = (selectedCat === c ? null : c); renderCatScroll(); }
+
+async function salvarLancamento() {
+  const valor = parseFloat(document.getElementById('txAmount').value);
+  const desc  = document.getElementById('txDesc').value.trim();
+  if (!valor || valor <= 0) { snack('Informe um valor válido!'); return; }
+  if (!desc)                 { snack('Informe a descrição!');    return; }
+  if (!selectedDir)          { snack('Selecione quem pagou!');   return; }
+
+  const editId = document.getElementById('txEditId').value;
+  const body = {
+    action:    'saveTransaction',
+    login:     usuario.login,
+    id:        editId || undefined,
+    data:      document.getElementById('txDate').value,
+    descricao: desc,
+    valor:     valor,
+    direcao:   selectedDir,
+    categoria: selectedCat || '',
+    notas:     document.getElementById('txNotes').value.trim()
+  };
+
+  const btn = document.getElementById('btnSalvarTx');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    const res = await api(body);
+    if (!res.ok) { snack('Erro: ' + res.error); return; }
+    fecharModal('addModal');
+    await recarregarTransacoes();
+    snack(editId ? '✅ Lançamento atualizado!' : '✅ Lançamento salvo!');
+  } catch(e) { snack('⚠️ Erro de conexão.'); }
+  finally { btn.disabled = false; btn.textContent = '✅ Salvar'; }
+}
+
+function editarLancamento(id) {
+  const tx = transactions.find(t => t.id === id);
+  if (!tx) return;
+  document.getElementById('addModalTitle').textContent = '✏️ Editar Lançamento';
+  document.getElementById('txEditId').value  = tx.id;
+  document.getElementById('txAmount').value  = tx.valor;
+  document.getElementById('txDesc').value    = tx.descricao;
+  document.getElementById('txNotes').value   = tx.notas || '';
+  document.getElementById('txDate').value    = tx.data ? tx.data.slice(0, 16) : '';
+  selectedDir = tx.direcao;
+  selectedCat = tx.categoria || null;
+  setDir(selectedDir);
+  renderCatScroll();
+  abrirModal('addModal');
+  // remove o abrirModal interno que limparia tudo — já preenchemos acima
+  document.getElementById('addModalTitle').textContent = '✏️ Editar Lançamento';
+}
+
+async function excluirLancamento(id) {
+  if (!confirm('Excluir este lançamento?')) return;
+  showLoading(true);
+  try {
+    const res = await api({ action: 'deleteTransaction', login: usuario.login, id });
+    if (!res.ok) { snack('Erro: ' + res.error); return; }
+    await recarregarTransacoes();
+    snack('🗑️ Lançamento excluído!');
+  } catch(e) { snack('⚠️ Erro de conexão.'); }
+  finally { showLoading(false); }
+}
+
+async function recarregarTransacoes() {
+  const res = await api({ action: 'getTransactions', login: usuario.login });
+  if (res.ok) transactions = res.transactions || [];
+  renderAll();
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  CONFIGURAÇÕES                                          ║
+// ╚══════════════════════════════════════════════════════════╝
+function renderCatList() {
+  const cats = usuario ? usuario.categorias : [];
+  document.getElementById('catList').innerHTML = cats.map((c, i) =>
+    `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+       <span style="font-size:14px;">${c}</span>
+       <button onclick="removeCategory(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;">✕</button>
+     </div>`
+  ).join('');
+}
+
+function addCategory() {
+  const val = document.getElementById('newCatInput').value.trim();
+  if (!val) return;
+  usuario.categorias.push(val);
+  document.getElementById('newCatInput').value = '';
+  renderCatList();
+}
+
+function removeCategory(i) {
+  usuario.categorias.splice(i, 1);
+  renderCatList();
+}
+
+async function salvarConfiguracoes() {
+  usuario.nomeMarido = document.getElementById('cfgNomeMarido').value.trim() || 'Marido';
+  usuario.nomeEsposa = document.getElementById('cfgNomeEsposa').value.trim() || 'Esposa';
+
+  showLoading(true);
+  try {
+    const res = await api({
+      action:     'saveSettings',
+      login:      usuario.login,
+      nomeMarido: usuario.nomeMarido,
+      nomeEsposa: usuario.nomeEsposa,
+      categorias: usuario.categorias,
+      darkMode:   usuario.darkMode
+    });
+    if (!res.ok) { snack('Erro: ' + res.error); return; }
+    updateDirLabels();
+    updateFilterChips();
+    renderAll();
+    snack('💾 Configurações salvas!');
+  } catch(e) { snack('⚠️ Erro de conexão.'); }
+  finally { showLoading(false); }
+}
+
+function updateDirLabels() {
+  if (!usuario) return;
+  document.getElementById('dirNomeMarido').textContent = usuario.nomeMarido;
+  document.getElementById('dirNomeEsposa').textContent = usuario.nomeEsposa;
+}
+function updateFilterChips() {
+  if (!usuario) return;
+  document.getElementById('chipMarido').textContent = usuario.nomeMarido;
+  document.getElementById('chipEsposa').textContent = usuario.nomeEsposa;
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  TEMA                                                   ║
+// ╚══════════════════════════════════════════════════════════╝
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  const isLight = document.body.classList.contains('light');
+  document.getElementById('themeToggle').classList.toggle('on', !isLight);
+  if (usuario) usuario.darkMode = !isLight;
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  UTILITÁRIOS                                            ║
+// ╚══════════════════════════════════════════════════════════╝
+function snack(msg) {
+  const el = document.getElementById('snackbar');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+function showLoading(v) {
+  document.getElementById('loadingOverlay').classList.toggle('show', v);
+}
+</script>
+</body>
+</html>
