@@ -348,7 +348,7 @@
 <div id="appShell">
 
   <div class="header">
-    <h1>💑 CasalPago</h1>
+    <h1>👨🏾 ❤️ 👩🏼 CasalPago</h1>
     <div class="header-actions">
       <button class="icon-btn" onclick="toggleTheme()" title="Tema">🌙</button>
       <button class="icon-btn" onclick="abrirModal('addModal')" title="Novo lançamento">＋</button>
@@ -496,11 +496,11 @@
       <label class="form-label">Quem pagou? *</label>
       <div class="direction-btns">
         <button class="dir-btn" id="dirMarido" onclick="setDir('marido')">
-          <div style="font-size:20px;">👨</div>
+          <div style="font-size:20px;">👨🏾</div>
           <div id="dirNomeMarido">Marido</div>
         </button>
         <button class="dir-btn" id="dirEsposa" onclick="setDir('esposa')">
-          <div style="font-size:20px;">👩</div>
+          <div style="font-size:20px;">👩🏼</div>
           <div id="dirNomeEsposa">Esposa</div>
         </button>
       </div>
@@ -723,7 +723,7 @@ function txItemHTML(tx) {
   const isM = tx.direcao === 'marido';
   const nome = isM ? usuario.nomeMarido : usuario.nomeEsposa;
   const cls  = isM ? 'husband' : 'wife';
-  const emo  = isM ? '👨' : '👩';
+  const emo  = isM ? '👨🏾' : '👩🏼';
   const data = tx.data ? new Date(tx.data).toLocaleDateString('pt-BR') : '';
   return `<div class="tx-item">
     <div class="tx-avatar ${cls}">${emo}</div>
@@ -749,7 +749,7 @@ function renderHistory() {
     const isM = tx.direcao === 'marido';
     const nome = isM ? usuario.nomeMarido : usuario.nomeEsposa;
     const cls  = isM ? 'husband' : 'wife';
-    const emo  = isM ? '👨' : '👩';
+    const emo  = isM ? '👨🏾' : '👩🏼';
     const data = tx.data ? new Date(tx.data).toLocaleDateString('pt-BR') : '';
     const linkComp = tx.comprovanteUrl
       ? `<a href="${tx.comprovanteUrl}" target="_blank" class="comprovante-link">📎 Ver comprovante</a>`
