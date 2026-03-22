@@ -264,6 +264,52 @@
   }
   .snackbar.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
+  /* ── ANEXO ───────────────────────────────────────────────── */
+  .attach-zone {
+    border:2px dashed var(--border); border-radius:12px;
+    padding:16px; text-align:center; cursor:pointer;
+    color:var(--text2); font-size:13px; transition:border-color .2s;
+  }
+  .attach-zone:hover { border-color:var(--accent); }
+  .attach-preview {
+    margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  }
+  .attach-thumb {
+    width:64px; height:64px; border-radius:8px;
+    object-fit:cover; border:1px solid var(--border); cursor:pointer;
+  }
+  .attach-file-chip {
+    display:flex; align-items:center; gap:6px;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:8px; padding:6px 10px; font-size:12px; color:var(--text2);
+  }
+  .attach-remove {
+    background:none; border:none; color:var(--danger);
+    cursor:pointer; font-size:14px; padding:0; line-height:1;
+  }
+
+  /* ── ANEXO ───────────────────────────────────────────────── */
+  .attach-zone {
+    border:2px dashed var(--border); border-radius:12px;
+    padding:14px; text-align:center; cursor:pointer;
+    color:var(--text2); font-size:13px; transition:border-color .2s;
+  }
+  .attach-zone:hover, .attach-zone.dragover { border-color:var(--accent); color:var(--accent); }
+  .attach-selected {
+    display:flex; align-items:center; gap:10px; margin-top:10px;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:10px 12px;
+  }
+  .attach-selected-name { flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .attach-remove-btn { background:none; border:none; color:var(--danger); cursor:pointer; font-size:18px; line-height:1; flex-shrink:0; }
+  .comprovante-link {
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:11px; color:var(--accent); text-decoration:none;
+    margin-top:4px; padding:3px 8px; border-radius:6px;
+    background:rgba(124,106,247,.12); border:1px solid rgba(124,106,247,.25);
+  }
+  .comprovante-link:hover { background:rgba(124,106,247,.22); }
+
   /* ── LOADING ─────────────────────────────────────────────── */
   .loading-overlay {
     position:fixed; inset:0; background:rgba(0,0,0,.5);
@@ -480,6 +526,23 @@
       <textarea class="form-textarea" id="txNotes" placeholder="Detalhes opcionais..."></textarea>
     </div>
 
+    <div class="form-group">
+      <label class="form-label">Comprovante <span style="font-weight:400;font-size:11px;text-transform:none;letter-spacing:0;">(opcional · foto ou PDF)</span></label>
+      <div class="attach-zone" id="attachZone" onclick="document.getElementById('txFileInput').click()">
+        📎 Toque para anexar foto ou PDF
+      </div>
+      <input type="file" id="txFileInput" accept="image/*,application/pdf" style="display:none" onchange="onFileSelected(this)">
+      <div id="attachSelected" style="display:none;" class="attach-selected">
+        <span style="font-size:20px;" id="attachIcon">📄</span>
+        <span class="attach-selected-name" id="attachName"></span>
+        <button class="attach-remove-btn" onclick="removerAnexo()" title="Remover">✕</button>
+      </div>
+      <div id="attachExistente" style="display:none;margin-top:8px;">
+        <a id="attachExistenteLink" href="#" target="_blank" class="comprovante-link">📎 Ver comprovante atual</a>
+        <button onclick="removerAnexoExistente()" style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;margin-left:8px;">Remover</button>
+      </div>
+    </div>
+
     <button class="btn-primary" id="btnSalvarTx" onclick="salvarLancamento()">✅ Salvar</button>
     <button class="btn-secondary" onclick="fecharModal('addModal')">Cancelar</button>
   </div>
@@ -503,6 +566,8 @@ let transactions = [];      // array local sincronizado com o Sheets
 let historyFilter = 'all';
 let selectedDir = null;
 let selectedCat = null;
+let pendingFile = null;         // { file, base64, mimeType, fileName }
+let removeExistingAttach = false; // flag para apagar comprovante no edit
 
 // ╔══════════════════════════════════════════════════════════╗
 // ║  API HELPER                                             ║
@@ -686,6 +751,9 @@ function renderHistory() {
     const cls  = isM ? 'husband' : 'wife';
     const emo  = isM ? '👨' : '👩';
     const data = tx.data ? new Date(tx.data).toLocaleDateString('pt-BR') : '';
+    const linkComp = tx.comprovanteUrl
+      ? `<a href="${tx.comprovanteUrl}" target="_blank" class="comprovante-link">📎 Ver comprovante</a>`
+      : '';
     return `<div class="tx-item-full">
       <div class="tx-row1">
         <div class="tx-avatar ${cls}" style="font-size:16px;">${emo}</div>
@@ -693,6 +761,7 @@ function renderHistory() {
           <div class="tx-desc">${tx.descricao || '(sem descrição)'}</div>
           <div class="tx-meta">${nome} · ${data}</div>
           ${tx.categoria ? `<span class="tx-category-badge">${tx.categoria}</span>` : ''}
+          ${linkComp}
         </div>
         <div class="tx-amount ${cls}">${fmt(tx.valor)}</div>
       </div>
@@ -788,6 +857,8 @@ function abrirModal(id) {
     setDir(null);
     document.getElementById('txDate').value = new Date().toISOString().slice(0, 16);
     renderCatScroll();
+    limparAnexo();
+    document.getElementById('attachExistente').style.display = 'none';
   }
   document.getElementById(id).classList.add('open');
 }
@@ -816,22 +887,51 @@ async function salvarLancamento() {
   if (!desc)                 { snack('Informe a descrição!');    return; }
   if (!selectedDir)          { snack('Selecione quem pagou!');   return; }
 
-  const editId = document.getElementById('txEditId').value;
-  const body = {
-    action:    'saveTransaction',
-    login:     usuario.login,
-    id:        editId || undefined,
-    data:      document.getElementById('txDate').value,
-    descricao: desc,
-    valor:     valor,
-    direcao:   selectedDir,
-    categoria: selectedCat || '',
-    notas:     document.getElementById('txNotes').value.trim()
-  };
+  const editId  = document.getElementById('txEditId').value;
+  const dataVal = document.getElementById('txDate').value;
 
   const btn = document.getElementById('btnSalvarTx');
   btn.disabled = true; btn.textContent = 'Salvando…';
+
   try {
+    // ── Upload do comprovante (se houver arquivo novo) ──
+    let comprovanteUrl = '';
+
+    if (pendingFile) {
+      btn.textContent = 'Enviando comprovante…';
+      const resUp = await api({
+        action:   'uploadComprovante',
+        login:    usuario.login,
+        data:     dataVal.slice(0, 10),
+        fileName: pendingFile.fileName,
+        mimeType: pendingFile.mimeType,
+        base64:   pendingFile.base64
+      });
+      if (!resUp.ok) { snack('Erro no upload: ' + resUp.error); return; }
+      comprovanteUrl = resUp.url;
+    } else if (removeExistingAttach) {
+      comprovanteUrl = ''; // apaga o link
+    } else if (editId) {
+      // mantém o existente — o GAS preserva se não vier url nova
+      comprovanteUrl = undefined;
+    }
+
+    btn.textContent = 'Salvando…';
+    const body = {
+      action:         'saveTransaction',
+      login:          usuario.login,
+      id:             editId || undefined,
+      data:           dataVal,
+      descricao:      desc,
+      valor:          valor,
+      direcao:        selectedDir,
+      categoria:      selectedCat || '',
+      notas:          document.getElementById('txNotes').value.trim(),
+      comprovanteUrl: comprovanteUrl
+    };
+    // remove chave undefined para não sobrescrever no GAS
+    if (comprovanteUrl === undefined) delete body.comprovanteUrl;
+
     const res = await api(body);
     if (!res.ok) { snack('Erro: ' + res.error); return; }
     fecharModal('addModal');
@@ -854,8 +954,20 @@ function editarLancamento(id) {
   selectedCat = tx.categoria || null;
   setDir(selectedDir);
   renderCatScroll();
+  limparAnexo();
+  removeExistingAttach = false;
+
+  // Mostra link do comprovante existente se houver
+  const existDiv  = document.getElementById('attachExistente');
+  const existLink = document.getElementById('attachExistenteLink');
+  if (tx.comprovanteUrl) {
+    existLink.href = tx.comprovanteUrl;
+    existDiv.style.display = 'block';
+  } else {
+    existDiv.style.display = 'none';
+  }
+
   abrirModal('addModal');
-  // remove o abrirModal interno que limparia tudo — já preenchemos acima
   document.getElementById('addModalTitle').textContent = '✏️ Editar Lançamento';
 }
 
@@ -875,6 +987,57 @@ async function recarregarTransacoes() {
   const res = await api({ action: 'getTransactions', login: usuario.login });
   if (res.ok) transactions = res.transactions || [];
   renderAll();
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  ANEXO / COMPROVANTE                                    ║
+// ╚══════════════════════════════════════════════════════════╝
+function onFileSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const maxMB = 10;
+  if (file.size > maxMB * 1024 * 1024) {
+    snack('Arquivo muito grande (máx ' + maxMB + 'MB)');
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    // e.target.result = "data:mime/type;base64,XXXX"
+    const parts = e.target.result.split(',');
+    pendingFile = {
+      file:     file,
+      fileName: file.name,
+      mimeType: file.type || 'application/octet-stream',
+      base64:   parts[1]
+    };
+    const isImg = file.type.startsWith('image/');
+    document.getElementById('attachIcon').textContent = isImg ? '🖼️' : '📄';
+    document.getElementById('attachName').textContent = file.name;
+    document.getElementById('attachSelected').style.display = 'flex';
+    document.getElementById('attachZone').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function removerAnexo() {
+  limparAnexo();
+}
+
+function removerAnexoExistente() {
+  removeExistingAttach = true;
+  document.getElementById('attachExistente').style.display = 'none';
+}
+
+function limparAnexo() {
+  pendingFile = null;
+  removeExistingAttach = false;
+  document.getElementById('attachSelected').style.display = 'none';
+  document.getElementById('attachZone').style.display = 'block';
+  document.getElementById('txFileInput').value = '';
 }
 
 // ╔══════════════════════════════════════════════════════════╗
