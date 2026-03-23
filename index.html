@@ -983,12 +983,11 @@ async function iniciarApp() {
     ]);
     if (r1.ok) transactions = r1.transactions || [];
     if (r2.ok) {
-      valorBase  = r2.valorBase  || 1000;
-      vigencias  = r2.vigencias  || [];
-      pagamentos = r2.pagamentos || [];
-      const calc      = calcularHistorico();
-      historicoMensal = calc.historico;
-      saldoAtual      = calc.saldoAtual;
+      valorBase       = r2.valorBase  || 1000;
+      vigencias       = r2.vigencias  || [];
+      pagamentos      = r2.pagamentos || [];
+      historicoMensal = r2.historico  || [];
+      saldoAtual      = r2.saldoAtual || 0;
     }
   } catch(e) { snack('⚠️ Erro ao carregar dados.'); }
   showLoading(false);
@@ -1736,9 +1735,8 @@ async function recarregarMensalidade() {
     valorBase       = r.valorBase  || 1000;
     vigencias       = r.vigencias  || [];
     pagamentos      = r.pagamentos || [];
-    const calc      = calcularHistorico();
-    historicoMensal = calc.historico;
-    saldoAtual      = calc.saldoAtual;
+    historicoMensal = r.historico  || [];
+    saldoAtual      = r.saldoAtual || 0;
   }
   renderMensalidadeTudo();
 }
