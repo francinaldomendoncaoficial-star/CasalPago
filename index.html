@@ -619,19 +619,13 @@
         </div>
       </div>
 
-      <!-- Valor base -->
-      <div class="config-card">
-        <div class="form-label" style="margin-bottom:10px;">⚙️ Valor base mensal</div>
-        <div class="config-row">
-          <input type="number" class="form-input" id="cfgValorBase" placeholder="1000" step="50" min="0">
-          <button class="btn-save-cfg" onclick="salvarValorBase()">Salvar</button>
-        </div>
-      </div>
-
       <!-- Pagamentos do mês -->
       <div class="section-title">
         <span>Pagamentos do mês</span>
-        <button class="btn-sm" onclick="abrirModalMensal()">+ Registrar</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-sm" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);" onclick="abrirModalValorBase()" title="Configurar valor base">⚙️</button>
+          <button class="btn-sm" onclick="abrirModalMensal()">+ Registrar</button>
+        </div>
       </div>
       <div id="pagList"></div>
 
@@ -827,6 +821,39 @@
   </div>
 </div>
 
+<!-- ══ MODAL: CONFIGURAR VALOR BASE ══════════════════════════ -->
+<div class="modal-overlay" id="valorBaseModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚙️ Valor base mensal</div>
+
+    <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">
+      Defina o valor que deve ser pago todo mês.<br>
+      A alteração vale a partir do mês informado e <strong style="color:var(--text);">não afeta o histórico anterior</strong>.
+    </p>
+
+    <div class="form-group">
+      <label class="form-label">Novo valor (R$) *</label>
+      <div class="amount-wrap">
+        <span class="currency-sym">R$</span>
+        <input type="number" class="amount-big" id="cfgValorBase" placeholder="0,00" step="50" min="0">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Vigente a partir de *</label>
+      <input type="month" class="form-input" id="cfgVigencia">
+    </div>
+
+    <!-- Histórico de vigências -->
+    <div class="form-label" style="margin-bottom:8px;">Histórico de valores</div>
+    <div id="vigenciasList" style="margin-bottom:16px;"></div>
+
+    <button class="btn-primary" id="btnSalvarValorBase" onclick="salvarValorBase()">💾 Salvar</button>
+    <button class="btn-secondary" onclick="fecharModal('valorBaseModal')">Cancelar</button>
+  </div>
+</div>
+
 <!-- SNACKBAR / LOADING -->
 <div class="snackbar" id="snackbar"></div>
 <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
@@ -850,6 +877,7 @@ let removeExistingAttach = false;
 
 // Mensalidade
 let valorBase       = 1000;
+let vigencias       = [];   // [ { anoMes: 'YYYY-MM', valor: N } ]
 let pagamentos      = [];
 let historicoMensal = [];
 let saldoAtual      = 0;
@@ -956,6 +984,7 @@ async function iniciarApp() {
     if (r1.ok) transactions = r1.transactions || [];
     if (r2.ok) {
       valorBase       = r2.valorBase  || 1000;
+      vigencias       = r2.vigencias  || [];
       pagamentos      = r2.pagamentos || [];
       historicoMensal = r2.historico  || [];
       saldoAtual      = r2.saldoAtual || 0;
@@ -1447,21 +1476,23 @@ function renderSaldoHero() {
 
 function renderMesSelector() {
   document.getElementById('mesLabel').textContent = nomeMes(mesSelecionado);
+
+  // Usa o valor base vigente no mês selecionado (não necessariamente o atual)
+  const baseDoMes = getValorBaseParaMes(mesSelecionado);
+
   const pagsMes   = pagamentos.filter(p => p.anoMes === mesSelecionado);
   const totalPago = pagsMes.reduce((s, p) => s + p.valor, 0);
-  const falta     = Math.max(0, valorBase - totalPago);
-  const pct       = Math.min(100, (totalPago / valorBase) * 100);
+  const falta     = Math.max(0, baseDoMes - totalPago);
+  const pct       = Math.min(100, (totalPago / baseDoMes) * 100);
 
   document.getElementById('mesPago').textContent          = fmt(totalPago);
   document.getElementById('mesFalta').textContent         = fmt(falta);
   document.getElementById('progTextoEsq').textContent     = 'Pago: ' + fmt(totalPago);
-  document.getElementById('progTextoDireita').textContent = 'Meta: ' + fmt(valorBase);
+  document.getElementById('progTextoDireita').textContent = 'Meta: ' + fmt(baseDoMes);
 
   const fill = document.getElementById('progFill');
   fill.style.width = pct + '%';
   fill.className   = 'mes-progress-fill ' + (pct >= 100 ? 'ok' : pct > 0 ? 'parcial' : 'zero');
-
-  document.getElementById('cfgValorBase').value = valorBase;
 }
 
 function renderPagamentosMes() {
@@ -1606,23 +1637,65 @@ async function excluirPagamento(id) {
   finally { showLoading(false); }
 }
 
+// ── Helper: valor base vigente para um determinado mês ────────
+function getValorBaseParaMes(anoMes) {
+  if (!vigencias.length) return valorBase;
+  const ordenadas = [...vigencias].sort((a, b) => a.anoMes.localeCompare(b.anoMes));
+  let v = ordenadas[0].valor;
+  for (const vig of ordenadas) {
+    if (vig.anoMes <= anoMes) v = vig.valor;
+    else break;
+  }
+  return v;
+}
+
+function abrirModalValorBase() {
+  // Preenche com o mês atual como sugestão de vigência
+  document.getElementById('cfgVigencia').value  = new Date().toISOString().slice(0, 7);
+  document.getElementById('cfgValorBase').value = valorBase;
+
+  // Renderiza histórico de vigências
+  const el = document.getElementById('vigenciasList');
+  if (!vigencias.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:13px;">Nenhum histórico ainda.</div>';
+  } else {
+    const ord = [...vigencias].sort((a, b) => b.anoMes.localeCompare(a.anoMes));
+    el.innerHTML = ord.map(v => `
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">
+        <span style="color:var(--text2);">A partir de ${nomeMes(v.anoMes)}</span>
+        <span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent);">${fmt(v.valor)}</span>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('valorBaseModal').classList.add('open');
+}
+
 async function salvarValorBase() {
-  const v = parseFloat(document.getElementById('cfgValorBase').value);
-  if (!v || v <= 0) { snack('Informe um valor válido!'); return; }
+  const v        = parseFloat(document.getElementById('cfgValorBase').value);
+  const vigencia = document.getElementById('cfgVigencia').value;
+  if (!v || v <= 0)  { snack('Informe um valor válido!'); return; }
+  if (!vigencia)     { snack('Informe o mês de vigência!'); return; }
+
+  const btn = document.getElementById('btnSalvarValorBase');
+  btn.disabled = true; btn.textContent = 'Salvando…';
   showLoading(true);
   try {
-    const res = await api({ action: 'setValorBase', login: usuario.login, valor: v });
+    const res = await api({ action: 'setValorBase', login: usuario.login, valor: v, vigencia });
     if (!res.ok) { snack('Erro: ' + res.error); return; }
+    fecharModal('valorBaseModal');
     await recarregarMensalidade();
     snack('💾 Valor base atualizado!');
   } catch(e) { snack('⚠️ Erro de conexão.'); }
-  finally { showLoading(false); }
+  finally { btn.disabled = false; btn.textContent = '💾 Salvar'; showLoading(false); }
 }
 
 async function recarregarMensalidade() {
   const r = await api({ action: 'getMensalidade', login: usuario.login });
   if (r.ok) {
     valorBase       = r.valorBase  || 1000;
+    vigencias       = r.vigencias  || [];
     pagamentos      = r.pagamentos || [];
     historicoMensal = r.historico  || [];
     saldoAtual      = r.saldoAtual || 0;
