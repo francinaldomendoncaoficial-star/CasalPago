@@ -983,11 +983,12 @@ async function iniciarApp() {
     ]);
     if (r1.ok) transactions = r1.transactions || [];
     if (r2.ok) {
-      valorBase       = r2.valorBase  || 1000;
-      vigencias       = r2.vigencias  || [];
-      pagamentos      = r2.pagamentos || [];
-      historicoMensal = r2.historico  || [];
-      saldoAtual      = r2.saldoAtual || 0;
+      valorBase  = r2.valorBase  || 1000;
+      vigencias  = r2.vigencias  || [];
+      pagamentos = r2.pagamentos || [];
+      const calc      = calcularHistorico();
+      historicoMensal = calc.historico;
+      saldoAtual      = calc.saldoAtual;
     }
   } catch(e) { snack('⚠️ Erro ao carregar dados.'); }
   showLoading(false);
@@ -1451,6 +1452,41 @@ function nomeMes(anoMes) {
   return nomes[parseInt(m) - 1] + '/' + y;
 }
 
+// ── Calcula histórico mês a mês do primeiro mês de vigência até hoje ──
+// Percorre TODOS os meses, usando o valor base vigente em cada um.
+// Meses sem pagamento entram com pago = 0 e o débito acumula.
+function calcularHistorico() {
+  if (!vigencias.length) return { historico: [], saldoAtual: 0 };
+
+  // Mapa de pagamentos por mês
+  const pagPorMes = {};
+  pagamentos.forEach(p => {
+    if (!pagPorMes[p.anoMes]) pagPorMes[p.anoMes] = 0;
+    pagPorMes[p.anoMes] += p.valor;
+  });
+
+  const mesAtual = new Date().toISOString().slice(0, 7);
+  const inicio   = [...vigencias].sort((a, b) => a.anoMes.localeCompare(b.anoMes))[0].anoMes;
+
+  const historico = [];
+  let saldoAcumulado = 0;
+  let cur = inicio;
+
+  while (cur <= mesAtual) {
+    const baseDoMes = getValorBaseParaMes(cur);
+    const pago      = pagPorMes[cur] || 0;
+    saldoAcumulado  = saldoAcumulado + pago - baseDoMes;
+    historico.push({ anoMes: cur, devido: baseDoMes, pago, saldo: saldoAcumulado });
+
+    // Avança um mês
+    const [y, m] = cur.split('-').map(Number);
+    const next   = new Date(y, m, 1); // m é 1-based, new Date(y, m) = próximo mês
+    cur = next.toISOString().slice(0, 7);
+  }
+
+  return { historico, saldoAtual: saldoAcumulado };
+}
+
 function renderMensalidadeTudo() {
   renderSaldoHero();
   renderMesSelector();
@@ -1697,8 +1733,9 @@ async function recarregarMensalidade() {
     valorBase       = r.valorBase  || 1000;
     vigencias       = r.vigencias  || [];
     pagamentos      = r.pagamentos || [];
-    historicoMensal = r.historico  || [];
-    saldoAtual      = r.saldoAtual || 0;
+    const calc      = calcularHistorico();
+    historicoMensal = calc.historico;
+    saldoAtual      = calc.saldoAtual;
   }
   renderMensalidadeTudo();
 }
