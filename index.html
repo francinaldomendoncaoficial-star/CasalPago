@@ -1465,8 +1465,10 @@ function calcularHistorico() {
     pagPorMes[p.anoMes] += p.valor;
   });
 
-  const mesAtual = new Date().toISOString().slice(0, 7);
-  const inicio   = [...vigencias].sort((a, b) => a.anoMes.localeCompare(b.anoMes))[0].anoMes;
+  // Mês atual no formato YYYY-MM (local, sem UTC)
+  const hoje    = new Date();
+  const mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+  const inicio  = [...vigencias].sort((a, b) => a.anoMes.localeCompare(b.anoMes))[0].anoMes;
 
   const historico = [];
   let saldoAcumulado = 0;
@@ -1478,10 +1480,11 @@ function calcularHistorico() {
     saldoAcumulado  = saldoAcumulado + pago - baseDoMes;
     historico.push({ anoMes: cur, devido: baseDoMes, pago, saldo: saldoAcumulado });
 
-    // Avança um mês
+    // Avança um mês sem depender de toISOString (evita problema de fuso)
     const [y, m] = cur.split('-').map(Number);
-    const next   = new Date(y, m, 1); // m é 1-based, new Date(y, m) = próximo mês
-    cur = next.toISOString().slice(0, 7);
+    const nextY  = m === 12 ? y + 1 : y;
+    const nextM  = m === 12 ? 1 : m + 1;
+    cur = nextY + '-' + String(nextM).padStart(2, '0');
   }
 
   return { historico, saldoAtual: saldoAcumulado };
