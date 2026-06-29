@@ -377,6 +377,78 @@
   .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
   .modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 20px; }
 
+  /* ── DETALHAMENTO MENSAL ─────────────────────────────────── */
+  .det-mes-selector {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .det-mes-select {
+    flex: 1; padding: 10px 14px;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 12px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    -webkit-appearance: none;
+  }
+  .det-mes-select:focus { outline: none; border-color: var(--accent); }
+  .det-resumo-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 16px; margin-bottom: 14px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    text-align: center;
+  }
+  .det-resumo-item {}
+  .det-resumo-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .det-resumo-valor { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-top: 4px; }
+  .det-table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); overflow: hidden; margin-bottom: 14px;
+  }
+  .det-table-header {
+    display: grid; grid-template-columns: 1fr 2fr 1fr;
+    padding: 10px 14px; background: var(--surface2);
+    font-size: 11px; font-weight: 700; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 0.4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .det-table-row {
+    display: grid; grid-template-columns: 1fr 2fr 1fr;
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    font-size: 13px; align-items: center;
+  }
+  .det-table-row:last-child { border-bottom: none; }
+  .det-table-row:hover { background: var(--surface2); }
+  .det-row-data { color: var(--text2); font-size: 12px; }
+  .det-row-desc { font-weight: 500; padding: 0 8px; }
+  .det-row-valor {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    color: var(--success); text-align: right;
+  }
+  .det-chip-row { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; }
+  .det-chip-row::-webkit-scrollbar { display: none; }
+  .det-chip {
+    padding: 6px 14px; border-radius: 20px; white-space: nowrap;
+    border: 1.5px solid var(--border); background: var(--surface);
+    font-size: 12px; font-weight: 500; color: var(--text2);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .det-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(124,106,247,0.1); }
+  .det-bar-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 16px; margin-bottom: 14px;
+  }
+  .det-bar-item { margin-bottom: 14px; }
+  .det-bar-item:last-child { margin-bottom: 0; }
+  .det-bar-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+  .det-bar-track {
+    height: 8px; border-radius: 4px;
+    background: var(--surface2); overflow: hidden;
+  }
+  .det-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), #a084ee);
+    transition: width 0.4s ease;
+  }
+
   /* ── MENSALIDADE ─────────────────────────────────────────── */
   .saldo-hero {
     border-radius: 20px; padding: 22px; margin-bottom: 16px;
@@ -649,6 +721,58 @@
 
     </div>
 
+    <!-- ── DETALHAMENTO MENSAL ── -->
+    <div class="page" id="pageDetalhamento">
+
+      <!-- Seletor de mês -->
+      <div class="det-mes-selector">
+        <select class="det-mes-select" id="detMesSelect" onchange="renderDetalhamento()">
+        </select>
+      </div>
+
+      <!-- Chips de filtro por descrição -->
+      <div class="det-chip-row" id="detChips"></div>
+
+      <!-- Resumo do mês selecionado -->
+      <div class="det-resumo-card" id="detResumo">
+        <div class="det-resumo-item">
+          <div class="det-resumo-label">Pagamentos</div>
+          <div class="det-resumo-valor" id="detQtd" style="color:var(--accent)">0</div>
+        </div>
+        <div class="det-resumo-item">
+          <div class="det-resumo-label">Total pago</div>
+          <div class="det-resumo-valor" id="detTotal" style="color:var(--success)">R$ 0,00</div>
+        </div>
+        <div class="det-resumo-item">
+          <div class="det-resumo-label">Meta mensal</div>
+          <div class="det-resumo-valor" id="detMeta" style="color:var(--warn)">R$ 0,00</div>
+        </div>
+      </div>
+
+      <!-- Barras por categoria -->
+      <div class="section-title">📊 Por categoria</div>
+      <div class="det-bar-card" id="detBars">
+        <div style="color:var(--text2);font-size:13px;">Selecione um mês para ver.</div>
+      </div>
+
+      <!-- Tabela de pagamentos -->
+      <div class="section-title">📋 Todos os pagamentos</div>
+      <div class="det-table-card">
+        <div class="det-table-header">
+          <span>Data</span>
+          <span>Descrição</span>
+          <span style="text-align:right;">Valor</span>
+        </div>
+        <div id="detTableBody">
+          <div class="empty-state" style="padding:24px;">
+            <span class="emoji" style="font-size:36px;display:block;margin-bottom:8px;">📭</span>
+            Selecione um mês acima.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
     <!-- ── CONFIGURAÇÕES ── -->
     <div class="page" id="pageSettings">
       <div class="settings-section">
@@ -705,6 +829,7 @@
     <button class="nav-item" onclick="goPage('History')"><span class="nav-icon">📋</span>Histórico</button>
     <button class="nav-item" onclick="goPage('Report')"><span class="nav-icon">📊</span>Relatório</button>
     <button class="nav-item" onclick="goPage('Mensalidade')"><span class="nav-icon">💰</span>Mensal</button>
+    <button class="nav-item" onclick="goPage('Detalhamento')"><span class="nav-icon">🧾</span>Detalhe</button>
     <button class="nav-item" onclick="goPage('Settings')"><span class="nav-icon">⚙️</span>Config</button>
   </div>
 
@@ -1002,7 +1127,7 @@ function goPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('page' + name).classList.add('active');
-  const idx = ['Dashboard','History','Report','Mensalidade','Settings'].indexOf(name);
+  const idx = ['Dashboard','History','Report','Mensalidade','Detalhamento','Settings'].indexOf(name);
   document.querySelectorAll('.nav-item')[idx].classList.add('active');
 
   // FAB: visível só no Dashboard e Histórico
@@ -1011,7 +1136,7 @@ function goPage(name) {
   if (name === 'Mensalidade') {
     fab.style.display = 'none';
     fabH.onclick = () => abrirModalMensal();
-  } else if (name === 'Settings' || name === 'Report') {
+  } else if (name === 'Settings' || name === 'Report' || name === 'Detalhamento') {
     fab.style.display = 'none';
     fabH.onclick = () => abrirModal('addModal');
   } else {
@@ -1019,8 +1144,9 @@ function goPage(name) {
     fabH.onclick = () => abrirModal('addModal');
   }
 
-  if (name === 'Report')       preencherDatasRelatorio();
-  if (name === 'Mensalidade')  renderMensalidadeTudo();
+  if (name === 'Report')        preencherDatasRelatorio();
+  if (name === 'Mensalidade')   renderMensalidadeTudo();
+  if (name === 'Detalhamento')  iniciarDetalhamento();
 }
 
 // ╔══════════════════════════════════════════════════════════╗
@@ -1739,6 +1865,110 @@ async function recarregarMensalidade() {
     saldoAtual      = r.saldoAtual || 0;
   }
   renderMensalidadeTudo();
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  DETALHAMENTO MENSAL                                    ║
+// ╚══════════════════════════════════════════════════════════╝
+let detFiltroCategoria = 'todos';
+
+function iniciarDetalhamento() {
+  popularDetMesSelect();
+  renderDetalhamento();
+}
+
+function popularDetMesSelect() {
+  const sel = document.getElementById('detMesSelect');
+  // Coletar todos os meses que aparecem nos pagamentos
+  const meses = [...new Set(pagamentos.map(p => p.anoMes))].sort().reverse();
+  // Incluir também meses do histórico que podem não ter pagamentos
+  historicoMensal.forEach(h => { if (!meses.includes(h.anoMes)) meses.push(h.anoMes); });
+  meses.sort().reverse();
+
+  const atual = sel.value || mesSelecionado;
+  sel.innerHTML = meses.length
+    ? meses.map(m => `<option value="${m}" ${m === atual ? 'selected' : ''}>${nomeMes(m)}</option>`).join('')
+    : `<option value="${mesSelecionado}">${nomeMes(mesSelecionado)}</option>`;
+}
+
+function renderDetalhamento() {
+  const anoMes = document.getElementById('detMesSelect').value || mesSelecionado;
+
+  // Filtrar pagamentos do mês selecionado
+  let lista = pagamentos.filter(p => p.anoMes === anoMes);
+
+  // Chips de categoria (descrições únicas)
+  const categorias = ['todos', ...new Set(lista.map(p => p.descricao || 'Sem descrição'))];
+  const chipsEl = document.getElementById('detChips');
+  chipsEl.innerHTML = categorias.map(c => `
+    <button class="det-chip ${detFiltroCategoria === c ? 'active' : ''}"
+      onclick="detSetCategoria('${c.replace(/'/g,"\\'")}')">
+      ${c === 'todos' ? '🔍 Todos' : c}
+    </button>`).join('');
+
+  // Filtrar por chip selecionado
+  if (detFiltroCategoria !== 'todos') {
+    lista = lista.filter(p => (p.descricao || 'Sem descrição') === detFiltroCategoria);
+  }
+
+  // Resumo
+  const total = lista.reduce((s, p) => s + parseFloat(p.valor || 0), 0);
+  const meta  = getValorBaseParaMes(anoMes);
+  document.getElementById('detQtd').textContent   = lista.length;
+  document.getElementById('detTotal').textContent = fmt(total);
+  document.getElementById('detMeta').textContent  = fmt(meta);
+
+  // Barras por categoria (sobre lista completa do mês, não filtrada)
+  const listaCompleta = pagamentos.filter(p => p.anoMes === anoMes);
+  const porCat = {};
+  listaCompleta.forEach(p => {
+    const k = p.descricao || 'Sem descrição';
+    porCat[k] = (porCat[k] || 0) + parseFloat(p.valor || 0);
+  });
+  const totalCompleto = Object.values(porCat).reduce((s, v) => s + v, 0);
+  const barsEl = document.getElementById('detBars');
+  if (!Object.keys(porCat).length) {
+    barsEl.innerHTML = '<div style="color:var(--text2);font-size:13px;text-align:center;padding:8px 0;">Nenhum pagamento neste mês.</div>';
+  } else {
+    barsEl.innerHTML = Object.entries(porCat)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat, val]) => {
+        const pct = totalCompleto > 0 ? (val / totalCompleto * 100).toFixed(1) : 0;
+        return `<div class="det-bar-item">
+          <div class="det-bar-top">
+            <span>${cat}</span>
+            <span style="color:var(--success);font-family:'Syne',sans-serif;font-weight:700;">${fmt(val)} <span style="color:var(--text2);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:400;">(${pct}%)</span></span>
+          </div>
+          <div class="det-bar-track">
+            <div class="det-bar-fill" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+      }).join('');
+  }
+
+  // Tabela
+  const tbody = document.getElementById('detTableBody');
+  if (!lista.length) {
+    tbody.innerHTML = `<div class="empty-state" style="padding:24px;">
+      <span class="emoji" style="font-size:36px;display:block;margin-bottom:8px;">📭</span>
+      Nenhum pagamento encontrado.
+    </div>`;
+    return;
+  }
+  const ordenada = [...lista].sort((a, b) => new Date(b.data) - new Date(a.data));
+  tbody.innerHTML = ordenada.map(p => {
+    const data = p.data ? new Date(p.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+    return `<div class="det-table-row">
+      <span class="det-row-data">${data}</span>
+      <span class="det-row-desc">${p.descricao || 'Pagamento'}</span>
+      <span class="det-row-valor">${fmt(p.valor)}</span>
+    </div>`;
+  }).join('');
+}
+
+function detSetCategoria(cat) {
+  detFiltroCategoria = cat;
+  renderDetalhamento();
 }
 
 // ╔══════════════════════════════════════════════════════════╗
